@@ -128,6 +128,9 @@ flags.DEFINE_integer('num_layers', 1,
 tf.flags.DEFINE_string('cell', 'lstm',
                     'Cell Type (LSTM or GRU) used.')
 
+### for data difference
+flags.DEFINE_string("seperator", ' ', "used to seperate the words|hanzi")
+
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
@@ -213,7 +216,7 @@ class DataProcessor(object):
             return lines
 
     # @classmethod
-    # def _read_data(cls, data_dir, input_prefix, seperator = '|'):
+    # def _read_data(cls, data_dir, input_prefix):
     #     """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
     #     """分隔符为 "|" """
     #
@@ -287,8 +290,10 @@ def write_tokens(tokens,mode):
                 wf.write(token+'\n')
         wf.close()
 
+## for CoNLL data, the seperator is space
+## for Wind Data, the seperator is `|`
 
-def convert_single_example(ex_index, example, label_map, max_seq_length, tokenizer, mode, seperator = '|'):
+def convert_single_example(ex_index, example, label_map, max_seq_length, tokenizer, mode, seperator = FLAGS.seperator):
     """
     将一个样本进行分析，然后将字转化为id, 标签转化为id,然后结构化到InputFeatures对象中
     :param ex_index: index
