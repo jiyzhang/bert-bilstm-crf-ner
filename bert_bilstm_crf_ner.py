@@ -129,7 +129,7 @@ tf.flags.DEFINE_string('cell', 'lstm',
                     'Cell Type (LSTM or GRU) used.')
 
 ### for data difference
-flags.DEFINE_string("seperator", ' ', "used to seperate the words|hanzi")
+flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
 
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
@@ -253,8 +253,10 @@ class NerProcessor(DataProcessor):
 
 
     def get_labels(self):
-        #return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "X", "[CLS]", "[SEP]"]
-        return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "X", "[CLS]", "[SEP]"]
+        if FLAGS.dataformat == "conll":
+            return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "X", "[CLS]", "[SEP]"]
+        else:
+            return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "X", "[CLS]", "[SEP]"]
 
     def _create_example(self, lines, set_type):
         examples = []
@@ -293,7 +295,7 @@ def write_tokens(tokens,mode):
 ## for CoNLL data, the seperator is space
 ## for Wind Data, the seperator is `|`
 
-def convert_single_example(ex_index, example, label_map, max_seq_length, tokenizer, mode, seperator = FLAGS.seperator):
+def convert_single_example(ex_index, example, label_map, max_seq_length, tokenizer, mode):
     """
     将一个样本进行分析，然后将字转化为id, 标签转化为id,然后结构化到InputFeatures对象中
     :param ex_index: index
@@ -313,12 +315,18 @@ def convert_single_example(ex_index, example, label_map, max_seq_length, tokeniz
             label_ids=[0] * max_seq_length, #label_ids=0,
             is_real_example=False)
 
+    if FLAGS.datasetformat == "wind":
+        seperator = '|'
+    else:
+        seperator = ' '
+
     textlist = example.text.split(seperator)
     labellist = example.label.split(seperator)
     tokens = []
     labels = []
     for i, word in enumerate(textlist):
-        # 分词，如果是中文，就是分字,但是对于一些不在BERT的vocab.txt中得字符会被进行WordPice处理（例如中文的引号），可以将所有的分字操作替换为list(input)
+        # 分词，如果是中文，就是分字,但是对于一些不在BERT的vocab.txt中得字符会被进行WordPice处理（例如中文的引号），
+        # 可以将所有的分字操作替换为list(input)
         token = tokenizer.tokenize(word)
         tokens.extend(token)
         label_1 = labellist[i]
@@ -389,6 +397,7 @@ def convert_single_example(ex_index, example, label_map, max_seq_length, tokeniz
         input_mask=input_mask,
         segment_ids=segment_ids,
         label_ids=label_ids,
+        is_real_example=True
         # label_mask = label_mask
     )
     # mode='test'的时候才有效
@@ -567,7 +576,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         # 使用参数构建模型,input_idx 就是输入的样本idx表示，label_ids 就是标签的idx表示
         total_loss, logits, trans, pred_ids = create_model(
             bert_config, is_training, input_ids, input_mask, segment_ids, label_ids,
-            num_labels, use_one_hot_embedding, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
+            num_labels, use_one_hot_embeddings, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
 
 
         tvars = tf.trainable_variables()
@@ -640,9 +649,9 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
                 # print("predictions shape: " + str(predictions.get_shape().as_list()))
                 # print("label_ids shape: " + str(label_ids.get_shape().as_list()))
                 # print("is_real_example shape: " + str(is_real_example.get_shape().as_list()))
-                precision = tf_metrics.precision(label_ids,predictions,9,[2,3,4,5], average="macro")
-                recall = tf_metrics.recall(label_ids,predictions,9,[2,3,4,5], average="macro")
-                f = tf_metrics.f1(label_ids,predictions,9,[2,3,4,5], average="macro")
+                precision = tf_metrics.precision(label_ids,predictions,num_labels,[2,3,4,5], average="macro")
+                recall = tf_metrics.recall(label_ids,predictions,num_labels,[2,3,4,5], average="macro")
+                f = tf_metrics.f1(label_ids,predictions,num_labels,[2,3,4,5], average="macro")
 
                 # precision = tf_metrics.precision(label_ids, predictions, 11, [2, 3, 4, 5, 6, 7], average="macro")
                 # recall = tf_metrics.recall(label_ids, predictions, 11, [2, 3, 4, 5, 6, 7], average="macro")
