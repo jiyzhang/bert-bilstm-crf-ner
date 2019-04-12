@@ -188,7 +188,8 @@ class DataProcessor(object):
     @classmethod
     def _read_data(cls, input_file):
         """Reads a BIO data."""
-        with codecs.open(input_file, 'r', encoding='utf-8') as f:
+        #with codecs.open(input_file, 'r', encoding='utf-8') as f:
+        with tf.gfile.Open(input_file) as f:
             lines = []
             words = []
             labels = []
