@@ -314,10 +314,11 @@ class NerProcessor(DataProcessor):
 def write_tokens(tokens,mode):
     if mode=="test":
         path = os.path.join(FLAGS.output_dir, "token_"+mode+".txt")
-        openmode = "w"
+        openmode = ""
         if tf.gfile.Exists(path):
-            tf.gfile.Remove(path)
-
+            openmode = 'a'
+        else:
+            openmode = 'w'
         wf = tf.gfile.Open(path, openmode)
         for token in tokens:
             if token!="**NULL**":
