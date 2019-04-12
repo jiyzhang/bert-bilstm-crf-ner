@@ -519,7 +519,7 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     return rst
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
-                     num_train_steps, num_warmup_steps, use_tpu, use_one_hot_embedding):
+                     num_train_steps, num_warmup_steps, use_tpu, use_one_hot_embeddings):
 
     """
     Returns `model_fn` closure for TPUEstimator.
