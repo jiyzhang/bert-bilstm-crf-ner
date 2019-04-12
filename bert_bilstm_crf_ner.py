@@ -119,7 +119,7 @@ flags.DEFINE_integer(
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
 ### for LSTM_CRF
-flags.DEFINE_float('dropout_rate', 0.5,
+flags.DEFINE_float('dropout_rate', 0.9,
                     "Dropout Rate")
 flags.DEFINE_integer('lstm_size', 128,
                     "size of lstm hidden units")
@@ -185,53 +185,53 @@ class DataProcessor(object):
         """Gets the list of labels for this data set."""
         raise NotImplementedError()
 
-    # @classmethod
-    # def _read_data(cls, input_file):
-    #     """Reads a BIO data."""
-    #     with codecs.open(input_file, 'r', encoding='utf-8') as f:
-    #         lines = []
-    #         words = []
-    #         labels = []
-    #         for line in f:
-    #             contends = line.strip()
-    #             tokens = contends.split(' ')
-    #             if len(tokens) == 2:
-    #                 words.append(tokens[0])
-    #                 labels.append(tokens[1])
-    #             else:
-    #                 if len(contends) == 0:
-    #                     l = ' '.join([label for label in labels if len(label) > 0])
-    #                     w = ' '.join([word for word in words if len(word) > 0])
-    #                     lines.append([l, w])
-    #                     words = []
-    #                     labels = []
-    #                     continue
-    #             if contends.startswith("-DOCSTART-"):
-    #                 words.append('')
-    #                 continue
-    #         return lines
-
     @classmethod
-    def _read_data(cls, data_dir, input_prefix, seperator = '|'):
-        """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
-        """分隔符为 "|" """
+    def _read_data(cls, input_file):
+        """Reads a BIO data."""
+        with codecs.open(input_file, 'r', encoding='utf-8') as f:
+            lines = []
+            words = []
+            labels = []
+            for line in f:
+                contends = line.strip()
+                tokens = contends.split(' ')
+                if len(tokens) == 2:
+                    words.append(tokens[0])
+                    labels.append(tokens[1])
+                else:
+                    if len(contends) == 0:
+                        l = ' '.join([label for label in labels if len(label) > 0])
+                        w = ' '.join([word for word in words if len(word) > 0])
+                        lines.append([l, w])
+                        words = []
+                        labels = []
+                        continue
+                if contends.startswith("-DOCSTART-"):
+                    words.append('')
+                    continue
+            return lines
 
-        sent_file = os.path.join(data_dir, input_prefix + ".words.txt")
-        tags_file = os.path.join(data_dir, input_prefix + ".tags.txt" )
-
-        print("sent file: {}, tag file: {}".format(sent_file, tags_file))
-
-        lines = []
-        with tf.gfile.Open(sent_file) as f_sent, tf.gfile.Open(tags_file) as f_tags:
-            for sent, labels in zip(f_sent, f_tags):
-                lines.append([labels.strip(), sent.strip()])
-
-        return lines
+    # @classmethod
+    # def _read_data(cls, data_dir, input_prefix, seperator = '|'):
+    #     """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
+    #     """分隔符为 "|" """
+    #
+    #     sent_file = os.path.join(data_dir, input_prefix + ".words.txt")
+    #     tags_file = os.path.join(data_dir, input_prefix + ".tags.txt" )
+    #
+    #     print("sent file: {}, tag file: {}".format(sent_file, tags_file))
+    #
+    #     lines = []
+    #     with tf.gfile.Open(sent_file) as f_sent, tf.gfile.Open(tags_file) as f_tags:
+    #         for sent, labels in zip(f_sent, f_tags):
+    #             lines.append([labels.strip(), sent.strip()])
+    #
+    #     return lines
 
 class NerProcessor(DataProcessor):
-    def __init__(self, output_dir):
-        self.labels = set()
-        self.output_dir = output_dir
+    # def __init__(self, output_dir):
+    #     self.labels = set()
+    #     self.output_dir = output_dir
 
     def get_train_examples(self, data_dir):
         return self._create_example(
