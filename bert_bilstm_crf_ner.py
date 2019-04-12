@@ -128,7 +128,7 @@ flags.DEFINE_integer('num_layers', 1,
 tf.flags.DEFINE_string('cell', 'lstm',
                     'Cell Type (LSTM or GRU) used.')
 
-### for data difference
+### for dataset format difference
 flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
 
 class InputExample(object):
@@ -189,7 +189,7 @@ class DataProcessor(object):
         raise NotImplementedError()
 
     @classmethod
-    def _read_data(cls, input_file):
+    def _read_data_conll(cls, input_file):
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
@@ -215,42 +215,70 @@ class DataProcessor(object):
                     continue
             return lines
 
-    # @classmethod
-    # def _read_data(cls, data_dir, input_prefix):
-    #     """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
-    #     """分隔符为 "|" """
-    #
-    #     sent_file = os.path.join(data_dir, input_prefix + ".words.txt")
-    #     tags_file = os.path.join(data_dir, input_prefix + ".tags.txt" )
-    #
-    #     print("sent file: {}, tag file: {}".format(sent_file, tags_file))
-    #
-    #     lines = []
-    #     with tf.gfile.Open(sent_file) as f_sent, tf.gfile.Open(tags_file) as f_tags:
-    #         for sent, labels in zip(f_sent, f_tags):
-    #             lines.append([labels.strip(), sent.strip()])
-    #
-    #     return lines
+    @classmethod
+    def _read_data(cls, data_dir, input_prefix):
+        """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
+        """分隔符为 "|" """
+
+        sent_file = os.path.join(data_dir, input_prefix + ".words.txt")
+        tags_file = os.path.join(data_dir, input_prefix + ".tags.txt" )
+
+        print("sent file: {}, tag file: {}".format(sent_file, tags_file))
+
+        lines = []
+        with tf.gfile.Open(sent_file) as f_sent, tf.gfile.Open(tags_file) as f_tags:
+            for sent, labels in zip(f_sent, f_tags):
+                lines.append([labels.strip(), sent.strip()])
+
+        return lines
 
 class NerProcessor(DataProcessor):
     # def __init__(self, output_dir):
     #     self.labels = set()
     #     self.output_dir = output_dir
 
+    # def get_train_examples(self, data_dir):
+    #     return self._create_example(
+    #         self._read_data(os.path.join(data_dir, "train.txt")), "train"
+    #     )
+    #
+    # def get_dev_examples(self, data_dir):
+    #     return self._create_example(
+    #         self._read_data(os.path.join(data_dir, "dev.txt")), "dev"
+    #     )
+    #
+    # def get_test_examples(self, data_dir):
+    #     return self._create_example(
+    #         self._read_data(os.path.join(data_dir, "test.txt")), "test")
+
     def get_train_examples(self, data_dir):
-        return self._create_example(
-            self._read_data(os.path.join(data_dir, "train.txt")), "train"
-        )
+        if FLAGS.datasetformat == "conll":
+            return self._create_example(
+                self._read_data_conll(os.path.join(data_dir, "train.txt")), "train"
+            )
+        else: # wind
+            return self._create_example(
+                self._read_data(data_dir, "train"), "train")
 
     def get_dev_examples(self, data_dir):
-        return self._create_example(
-            self._read_data(os.path.join(data_dir, "dev.txt")), "dev"
-        )
+        if FLAGS.datasetformat == "conll":
+            return self._create_example(
+                self._read_data_conll(os.path.join(data_dir, "dev.txt")), "dev"
+            )
+        else:
+            return self._create_example(
+                self._read_data(data_dir, "valid"), "dev"
+            )
 
-    def get_test_examples(self, data_dir):
-        return self._create_example(
-            self._read_data(os.path.join(data_dir, "test.txt")), "test")
-
+    def get_test_examples(self,data_dir):
+        if FLAGS.datasetformat == "conll":
+            return self._create_example(
+                self._read_data_conll(os.path.join(data_dir, "test.txt")), "test"
+            )
+        else:
+            return self._create_example(
+                self._read_data(data_dir, "test"), "test"
+            )
 
     def get_labels(self):
         if FLAGS.datasetformat == "conll":
@@ -286,11 +314,10 @@ class NerProcessor(DataProcessor):
 def write_tokens(tokens,mode):
     if mode=="test":
         path = os.path.join(FLAGS.output_dir, "token_"+mode+".txt")
-        openmode = ""
+        openmode = "w"
         if tf.gfile.Exists(path):
-            openmode = 'a'
-        else:
-            openmode = 'w'
+            tf.gfile.Remove(path)
+
         wf = tf.gfile.Open(path, openmode)
         for token in tokens:
             if token!="**NULL**":
