@@ -253,7 +253,7 @@ class NerProcessor(DataProcessor):
 
 
     def get_labels(self):
-        if FLAGS.dataformat == "conll":
+        if FLAGS.datasetformat == "conll":
             return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "X", "[CLS]", "[SEP]"]
         else:
             return ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "X", "[CLS]", "[SEP]"]
