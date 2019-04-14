@@ -131,6 +131,12 @@ tf.flags.DEFINE_string('cell', 'lstm',
 ### for dataset format difference
 flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
 
+
+col_sep  = " <-> "
+sent_sep = "|" + col_sep + "|"
+file_sep = "^^" + col_sep + "^^"
+
+
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
@@ -216,6 +222,32 @@ class DataProcessor(object):
             return lines
 
     @classmethod
+    def _read_data_wind(cls, input_file):
+        """Reads a BIO data."""
+        #with codecs.open(input_file, 'r', encoding='utf-8') as f:
+        with tf.gfile.Open(input_file) as f:
+            lines = []
+            words = []
+            labels = []
+            for line in f:
+                contends = line.strip()
+                if contends == file_sep or contends == sent_sep:
+                    # new sentence
+                    l = '|'.join([label for label in labels if len(label) > 0])
+                    w = '|'.join([word for word in words if len(word) > 0])
+                    lines.append([l, w])
+                    words = []
+                    labels = []
+                    continue
+                else:
+                    tokens = contends.split(col_sep)
+                    if len(tokens) == 2:
+                        words.append(tokens[0])
+                        labels.append(tokens[1])
+
+            return lines
+
+    @classmethod
     def _read_data(cls, data_dir, input_prefix):
         """Reads sents and tags from "input_prefix".words.txt and "input_prefix".tags.txt """
         """分隔符为 "|" """
@@ -254,31 +286,26 @@ class NerProcessor(DataProcessor):
     def get_train_examples(self, data_dir):
         if FLAGS.datasetformat == "conll":
             return self._create_example(
-                self._read_data_conll(os.path.join(data_dir, "train.txt")), "train"
-            )
+                self._read_data_conll(os.path.join(data_dir, "train.txt")), "train")
         else: # wind
             return self._create_example(
-                self._read_data(data_dir, "train"), "train")
+                self._read_data_wind(os.path.join(data_dir, "train.txt")), "train")
 
     def get_dev_examples(self, data_dir):
         if FLAGS.datasetformat == "conll":
             return self._create_example(
-                self._read_data_conll(os.path.join(data_dir, "dev.txt")), "dev"
-            )
+                self._read_data_conll(os.path.join(data_dir, "dev.txt")), "dev")
         else:
             return self._create_example(
-                self._read_data(data_dir, "valid"), "dev"
-            )
+                self._read_data_wind( os.path.join(data_dir, "dev.txt")), "dev")
 
     def get_test_examples(self,data_dir):
         if FLAGS.datasetformat == "conll":
             return self._create_example(
-                self._read_data_conll(os.path.join(data_dir, "test.txt")), "test"
-            )
+                self._read_data_conll(os.path.join(data_dir, "test.txt")), "test")
         else:
             return self._create_example(
-                self._read_data(data_dir, "test"), "test"
-            )
+                self._read_data_wind(os.path.join(data_dir, "test.txt")), "test")
 
     def get_labels(self):
         if FLAGS.datasetformat == "conll":
