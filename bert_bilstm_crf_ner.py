@@ -137,11 +137,6 @@ flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
 
 
 tf.logging.set_verbosity(logging.DEBUG)
-handlers = [
-    logging.FileHandler(FLAGS.output_dir + "/main.log"),
-    logging.StreamHandler(sys.stdout)
-]
-logging.getLogger("tensorflow").handlers = handlers
 
 col_sep  = " <-> "
 sent_sep = "|" + col_sep + "|"
@@ -551,9 +546,10 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
     def input_fn(params):
         batch_size = params["batch_size"]
         d = tf.data.TFRecordDataset(input_file)
-        if is_training:
-            d = d.repeat()
-            d = d.shuffle(buffer_size=300)
+        # if is_training:
+        #     d = d.repeat()
+        #     d = d.shuffle(buffer_size=300)
+        d = d.repeat()
         d = d.apply(
             tf.data.experimental.map_and_batch(
                 lambda record: _decode_record(record, name_to_features),
