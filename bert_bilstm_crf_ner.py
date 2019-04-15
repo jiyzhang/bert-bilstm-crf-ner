@@ -546,17 +546,17 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
     def input_fn(params):
         batch_size = params["batch_size"]
         d = tf.data.TFRecordDataset(input_file)
-        # if is_training:
-        #     d = d.repeat()
-        #     d = d.shuffle(buffer_size=300)
-        d = d.repeat()
+        if is_training:
+            d = d.repeat()
+            d = d.shuffle(buffer_size=300)
+
         d = d.apply(
             tf.data.experimental.map_and_batch(
                 lambda record: _decode_record(record, name_to_features),
                 batch_size=batch_size,
                 #num_parallel_calls=8,  # 并行处理数据的CPU核心数量，不要大于你机器的核心数
                 drop_remainder=drop_remainder))
-        d = d.prefetch(buffer_size=4)
+        d = d.prefetch(buffer_size=8)
         return d
 
     return input_fn
@@ -907,8 +907,11 @@ def main(_):
             # will get dropped. So we pad with fake examples which are ignored
             # later on. These do NOT count towards the metric (all tf.metrics
             # support a per-instance weight, and these get a weight of 0.0).
-            while len(eval_examples) % FLAGS.eval_batch_size != 0:
+
+            # 8 is the TPU cores
+            while len(eval_examples) % (FLAGS.eval_batch_size * 8) != 0:
                 eval_examples.append(PaddingInputExample())
+
 
         eval_file = os.path.join(FLAGS.output_dir, "eval.tf_record")
         filed_based_convert_examples_to_features(
@@ -927,6 +930,10 @@ def main(_):
         if FLAGS.use_tpu:
             assert len(eval_examples) % FLAGS.eval_batch_size == 0
             eval_steps = int(len(eval_examples) / FLAGS.eval_batch_size)
+            # The total batch size should be a multiple of 64 (8 per TPU core), and feature dimensions should be a multiple of 128
+            # https://cloud.google.com/tpu/docs/troubleshooting
+            # eval_steps = eval_steps // 8 * 8
+            # solved by padding
 
         eval_drop_remainder = True if FLAGS.use_tpu else False
         #eval_drop_remainder = False
