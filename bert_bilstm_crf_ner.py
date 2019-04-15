@@ -7,11 +7,14 @@ BASED ON Google_BERT.
 
 import collections
 import os
+import sys
 import numpy as np
-import tensorflow as tf
+
 import codecs
 import pickle
+import logging
 
+import tensorflow as tf
 import tf_metrics
 from bert import modeling
 from bert import optimization
@@ -131,6 +134,14 @@ tf.flags.DEFINE_string('cell', 'lstm',
 ### for dataset format difference
 flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
 
+
+
+tf.logging.set_verbosity(logging.DEBUG)
+handlers = [
+    logging.FileHandler(FLAGS.output_dir + "/main.log"),
+    logging.StreamHandler(sys.stdout)
+]
+logging.getLogger("tensorflow").handlers = handlers
 
 col_sep  = " <-> "
 sent_sep = "|" + col_sep + "|"
@@ -492,7 +503,7 @@ def filed_based_convert_examples_to_features(
         if ex_index % 5000 == 0:
             tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
 
-        ### skip sentences whose length is great than max_seq_len(256)
+        ### skip sentences whose length is greater than max_seq_len(256)
         ### $$$$$$$$$$$$!!!!!!!需要处理，很多句子会被skip
         if (not isinstance(example, PaddingInputExample)) and len(example.text) >= FLAGS.max_seq_length:
             continue
