@@ -133,7 +133,7 @@ tf.flags.DEFINE_string('cell', 'lstm',
 tf.flags.DEFINE_bool('crf_only', True, 'whether just only CRF layer')
 
 ### for dataset format difference
-flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
+tf.flags.DEFINE_string('datasetformat', 'wind', "dataset format, conll or wind")
 
 
 
@@ -203,6 +203,7 @@ class DataProcessor(object):
 
     @classmethod
     def _read_data_conll(cls, input_file):
+        tf.logging.log("datasetformat: %s" % (FLAGS.datasetformat))
         tf.logging.log("dataset format: conll")
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
@@ -231,6 +232,7 @@ class DataProcessor(object):
 
     @classmethod
     def _read_data_wind(cls, input_file):
+        tf.logging.log("datasetformat: %s" %(FLAGS.datasetformat))
         tf.logging.log("dataset format: wind")
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
