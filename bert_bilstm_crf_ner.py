@@ -122,8 +122,8 @@ flags.DEFINE_integer(
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
 ### for LSTM_CRF
-flags.DEFINE_float('dropout_rate', 0.9,
-                    "Dropout Rate")
+flags.DEFINE_float('keep_prob', 0.9,
+                    "LSTMP keep_prob")
 flags.DEFINE_integer('lstm_size', 128,
                     "size of lstm hidden units")
 flags.DEFINE_integer('num_layers', 1,
@@ -565,7 +565,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, is_eval, dr
 
 def create_model(bert_config, is_training, input_ids, input_mask,
                  segment_ids, labels, num_labels, use_one_hot_embeddings,
-                 crf_only=True, dropout_rate=0.9, lstm_size=1, cell='lstm', num_layers=1):
+                 crf_only=True, keep_prob=0.9, lstm_size=1, cell='lstm', num_layers=1):
     """
     创建X模型
     :param bert_config: bert 配置
@@ -577,7 +577,7 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     :param num_labels: 类别数量
     :param use_one_hot_embeddings:
     :param crf_only: 是否只使用CRF
-    :param dropout_rate:
+    :param keep_prob:
     :param lstm_size: hidden size of LSTM
     :param cell LSTM| GRU
     :param num_layers BiLSTM layes
@@ -600,7 +600,7 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     lengths = tf.reduce_sum(used, reduction_indices=1)  # [batch_size] 大小的向量，包含了当前batch中的序列长度
     # 添加CRF output layer
     blstm_crf = BiLSTM_CRF(embedded_chars=embedding, hidden_unit=lstm_size, cell_type=cell, num_layers=num_layers,
-                           dropout_rate=dropout_rate, initializers=initializers, num_labels=num_labels,
+                           keep_prob=keep_prob, initializers=initializers, num_labels=num_labels,
                            seq_length=max_seq_length, labels=labels, lengths=lengths, is_training=is_training)
     rst = blstm_crf.add_bilstm_crf_layer(crf_only)
     return rst
@@ -650,7 +650,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         total_loss, logits, trans, pred_ids = create_model(
             bert_config, is_training, input_ids, input_mask, segment_ids, label_ids,
             num_labels, use_one_hot_embeddings,
-            FLAGS.crf_only, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
+            FLAGS.crf_only, FLAGS.keep_prob, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
 
 
         tvars = tf.trainable_variables()

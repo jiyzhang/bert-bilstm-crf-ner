@@ -10,7 +10,7 @@ from tensorflow.contrib import crf
 
 
 class BiLSTM_CRF(object):
-    def __init__(self, embedded_chars, hidden_unit, cell_type, num_layers, dropout_rate,
+    def __init__(self, embedded_chars, hidden_unit, cell_type, num_layers, keep_prob,
                  initializers, num_labels, seq_length, labels, lengths, is_training):
         """
         BLSTM-CRF 网络
@@ -18,7 +18,7 @@ class BiLSTM_CRF(object):
         :param hidden_unit: LSTM的隐含单元个数
         :param cell_type: RNN类型（LSTM OR GRU）
         :param num_layers: RNN的层数
-        :param droupout_rate: droupout rate
+        :param keep_prob:
         :param initializers: variable init class
         :param num_labels: 标签数量
         :param seq_length: 序列最大长度
@@ -27,7 +27,7 @@ class BiLSTM_CRF(object):
         :param is_training: 是否是训练过程
         """
         self.hidden_unit = hidden_unit
-        self.dropout_rate = dropout_rate
+        self.keep_prob = keep_prob
         self.cell_type = cell_type
         self.num_layers = num_layers
         self.embedded_chars = embedded_chars
@@ -45,8 +45,8 @@ class BiLSTM_CRF(object):
         :return:
         """
         if self.is_training:
-            # lstm input dropout rate i set 0.9 will get best score
-            self.embedded_chars = tf.nn.dropout(self.embedded_chars, self.dropout_rate)
+            # lstm input keep_prob i set 0.9 will get best score
+            self.embedded_chars = tf.nn.dropout(self.embedded_chars, self.keep_prob)
 
         if crf_only:
             logits = self.project_crf_layer()
@@ -80,9 +80,9 @@ class BiLSTM_CRF(object):
         """
         cell_fw = self._create_cell()
         cell_bw = self._create_cell()
-        if self.dropout_rate is not None:
-            cell_bw = rnn.DropoutWrapper(cell_bw, output_keep_prob=self.dropout_rate)
-            cell_fw = rnn.DropoutWrapper(cell_fw, output_keep_prob=self.dropout_rate)
+        if self.keep_prob is not None:
+            cell_bw = rnn.DropoutWrapper(cell_bw, output_keep_prob=self.keep_prob)
+            cell_fw = rnn.DropoutWrapper(cell_fw, output_keep_prob=self.keep_prob)
         return cell_fw, cell_bw
 
     def bilstm_layer(self, embedding_chars):
