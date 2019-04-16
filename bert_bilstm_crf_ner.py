@@ -524,7 +524,7 @@ def filed_based_convert_examples_to_features(
     writer.close()
 
 
-def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remainder):
+def file_based_input_fn_builder(input_file, seq_length, is_training, is_eval, drop_remainder):
     name_to_features = {
         "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
         "input_mask": tf.FixedLenFeature([seq_length], tf.int64),
@@ -547,12 +547,13 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
     def input_fn(params):
         batch_size = params["batch_size"]
         d = tf.data.TFRecordDataset(input_file)
-        # if is_training:
-        #     d = d.repeat()
-        #     d = d.shuffle(buffer_size=300)
+        if is_training:
+            d = d.repeat()
+            d = d.shuffle(buffer_size=300)
 
-        # to avlid "end of sequence" error @eval stage
-        d = d.repeat()
+        if is_eval:
+            # to avlid "end of sequence" error @eval stage
+            d = d.repeat()
 
         d = d.apply(
             tf.data.experimental.map_and_batch(
@@ -904,6 +905,7 @@ def main(_):
             input_file=train_file,
             seq_length=FLAGS.max_seq_length,
             is_training=True,
+            is_eval=False,
             drop_remainder=True)
 
         estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
@@ -959,6 +961,7 @@ def main(_):
             input_file=eval_file,
             seq_length=FLAGS.max_seq_length,
             is_training=False,
+            is_eval=True,
             drop_remainder=eval_drop_remainder)
 
         try:
@@ -1006,6 +1009,7 @@ def main(_):
             input_file=predict_file,
             seq_length=FLAGS.max_seq_length,
             is_training=False,
+            is_eval=False,
             drop_remainder=predict_drop_remainder)
 
         result = estimator.predict(input_fn=predict_input_fn)
