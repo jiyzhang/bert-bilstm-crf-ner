@@ -130,6 +130,7 @@ flags.DEFINE_integer('num_layers', 1,
                     'number of rnn layers, default is 1.')
 tf.flags.DEFINE_string('cell', 'lstm',
                     'Cell Type (LSTM or GRU) used.')
+tf.flags.DEFINE_bool('crf_only', True, 'whether just only CRF layer')
 
 ### for dataset format difference
 flags.DEFINE_string("datasetformat", 'wind', "dataset format, conll or wind")
@@ -567,7 +568,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
 
 def create_model(bert_config, is_training, input_ids, input_mask,
                  segment_ids, labels, num_labels, use_one_hot_embeddings,
-                 dropout_rate=0.9, lstm_size=1, cell='lstm', num_layers=1):
+                 crf_only=True, dropout_rate=0.9, lstm_size=1, cell='lstm', num_layers=1):
     """
     创建X模型
     :param bert_config: bert 配置
@@ -578,6 +579,11 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     :param labels: 标签的idx 表示
     :param num_labels: 类别数量
     :param use_one_hot_embeddings:
+    :param crf_only: 是否只使用CRF
+    :param dropout_rate:
+    :param lstm_size: hidden size of LSTM
+    :param cell LSTM| GRU
+    :param num_layers BiLSTM layes
     :return:
     """
     # 使用数据加载BertModel,获取对应的字embedding
@@ -599,7 +605,7 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     blstm_crf = BiLSTM_CRF(embedded_chars=embedding, hidden_unit=lstm_size, cell_type=cell, num_layers=num_layers,
                            dropout_rate=dropout_rate, initializers=initializers, num_labels=num_labels,
                            seq_length=max_seq_length, labels=labels, lengths=lengths, is_training=is_training)
-    rst = blstm_crf.add_bilstm_crf_layer(crf_only=True)
+    rst = blstm_crf.add_bilstm_crf_layer(crf_only)
     return rst
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
@@ -646,7 +652,8 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         # 使用参数构建模型,input_idx 就是输入的样本idx表示，label_ids 就是标签的idx表示
         total_loss, logits, trans, pred_ids = create_model(
             bert_config, is_training, input_ids, input_mask, segment_ids, label_ids,
-            num_labels, use_one_hot_embeddings, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
+            num_labels, use_one_hot_embeddings,
+            FLAGS.crf_only, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers)
 
 
         tvars = tf.trainable_variables()
