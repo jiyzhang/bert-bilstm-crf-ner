@@ -468,7 +468,7 @@ def convert_single_example(ex_index, example, label_map, max_seq_length, tokeniz
         # label_mask = label_mask
     )
     # mode='test'的时候才有效
-    write_tokens(ntokens, mode)
+    # write_tokens(ntokens, mode)
     return feature
 
 
@@ -499,12 +499,8 @@ def filed_based_convert_examples_to_features(
         if ex_index % 5000 == 0:
             tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
 
-        ### skip sentences whose length is greater than max_seq_len(256)
-        ### $$$$$$$$$$$$!!!!!!!需要处理，很多句子会被skip
-        if (not isinstance(example, PaddingInputExample)) and len(example.text) >= FLAGS.max_seq_length:
-            continue
-
         # 对于每一个训练样本,
+        # convert_single_example自动对长句子进行裁剪，到[CLS]max_seq_len - 2[SEP]
         feature = convert_single_example(ex_index, example, label_map, max_seq_length, tokenizer,  mode)
 
         def create_int_feature(values):
