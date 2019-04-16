@@ -203,8 +203,8 @@ class DataProcessor(object):
 
     @classmethod
     def _read_data_conll(cls, input_file):
-        tf.logging.log("datasetformat: %s" % (FLAGS.datasetformat))
-        tf.logging.log("dataset format: conll")
+        tf.logging.info("datasetformat: %s" % (FLAGS.datasetformat))
+        tf.logging.info("dataset format: conll")
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
@@ -232,8 +232,8 @@ class DataProcessor(object):
 
     @classmethod
     def _read_data_wind(cls, input_file):
-        tf.logging.log("datasetformat: %s" %(FLAGS.datasetformat))
-        tf.logging.log("dataset format: wind")
+        tf.logging.info("datasetformat: %s" %(FLAGS.datasetformat))
+        tf.logging.info("dataset format: wind")
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
