@@ -231,6 +231,7 @@ class DataProcessor(object):
 
     @classmethod
     def _read_data_wind(cls, input_file):
+        tf.logging.log("dataset format: wind")
         """Reads a BIO data."""
         #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
