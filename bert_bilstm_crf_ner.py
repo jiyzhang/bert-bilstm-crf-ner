@@ -515,7 +515,7 @@ def filed_based_convert_examples_to_features(
         features["input_mask"] = create_int_feature(feature.input_mask)
         features["segment_ids"] = create_int_feature(feature.segment_ids)
         features["label_ids"] = create_int_feature(feature.label_ids)
-        features["is_real_example"] = create_int_feature([int(feature.is_real_example)]) #?
+        features["is_real_example"] = create_int_feature([int(feature.is_real_example)])
         # features["label_mask"] = create_int_feature(feature.label_mask)
         # tf.train.Example/Feature 是一种协议，方便序列化？？？
         tf_example = tf.train.Example(features=tf.train.Features(feature=features))
@@ -529,7 +529,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
         "input_mask": tf.FixedLenFeature([seq_length], tf.int64),
         "segment_ids": tf.FixedLenFeature([seq_length], tf.int64),
         "label_ids": tf.FixedLenFeature([seq_length], tf.int64),  # seq_length
-        "is_real_example": tf.FixedLenFeature([seq_length], tf.int64),
+        "is_real_example": tf.FixedLenFeature([], tf.int64),
         # "label_ids":tf.VarLenFeature(tf.int64),
         # "label_mask": tf.FixedLenFeature([seq_length], tf.int64),
     }
