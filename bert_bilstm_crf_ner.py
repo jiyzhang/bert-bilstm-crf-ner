@@ -528,7 +528,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
         "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
         "input_mask": tf.FixedLenFeature([seq_length], tf.int64),
         "segment_ids": tf.FixedLenFeature([seq_length], tf.int64),
-        "label_ids": tf.FixedLenFeature([seq_length], tf.int64),
+        "label_ids": tf.FixedLenFeature([], tf.int64),  # seq_length
         "is_real_example": tf.FixedLenFeature([], tf.int64),
         # "label_ids":tf.VarLenFeature(tf.int64),
         # "label_mask": tf.FixedLenFeature([seq_length], tf.int64),
@@ -546,9 +546,12 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
     def input_fn(params):
         batch_size = params["batch_size"]
         d = tf.data.TFRecordDataset(input_file)
-        if is_training:
-            d = d.repeat()
-            d = d.shuffle(buffer_size=300)
+        # if is_training:
+        #     d = d.repeat()
+        #     d = d.shuffle(buffer_size=300)
+
+        # to avlid "end of sequence" error @eval stage
+        d = d.repeat()
 
         d = d.apply(
             tf.data.experimental.map_and_batch(
@@ -556,7 +559,7 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, drop_remain
                 batch_size=batch_size,
                 #num_parallel_calls=8,  # 并行处理数据的CPU核心数量，不要大于你机器的核心数
                 drop_remainder=drop_remainder))
-        d = d.prefetch(buffer_size=8)
+        d = d.prefetch(buffer_size=8)   ##//?
         return d
 
     return input_fn
@@ -740,7 +743,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         else:
             output_spec = tf.contrib.tpu.TPUEstimatorSpec(
                 mode=mode,
-                predictions={"probabilities":pred_ids},   ### 是否要组织成一个dictionary?
+                predictions={"predictions":pred_ids},   ### 是否要组织成一个dictionary?
                 scaffold_fn=scaffold_fn
             )
         return output_spec
@@ -909,7 +912,7 @@ def main(_):
             # support a per-instance weight, and these get a weight of 0.0).
 
             # 8 is the TPU cores
-            while len(eval_examples) % (FLAGS.eval_batch_size * 8) != 0:
+            while len(eval_examples) % (FLAGS.eval_batch_size * FLAGS.num_tpu_cores) != 0:
                 eval_examples.append(PaddingInputExample())
 
 
@@ -1004,7 +1007,7 @@ def main(_):
         # needs to confirm
         with tf.gfile.GFile(output_predict_file,'w') as writer:
             for prediction in result:
-                predict = prediction["probabilities"]
+                predict = prediction["predictions"]
                 output_line = "\n".join(id2label[id] for id in predict if id!=0) + "\n"
                 writer.write(output_line)
 
