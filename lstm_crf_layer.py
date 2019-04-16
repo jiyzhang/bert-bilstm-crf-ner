@@ -1,7 +1,7 @@
 # encoding=utf-8
 
 """
-bert-bilstm-crf layer
+bilstm-crf layer
 """
 
 import tensorflow as tf
