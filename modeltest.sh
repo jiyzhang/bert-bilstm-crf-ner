@@ -1,11 +1,14 @@
+#!/bin/bash
 
 DO_TRAIN="False"
 DO_PREDICT="False"
 DO_EVAL="False"
 
-if [ $1 == '100' ]; then
+if [ $1 = '100' ] 
+then
    DO_TRAIN="True"
-elif [ $1 == '010' ]; then
+elif [ $1 = '010' ] 
+then
    DO_EVAL="True"
 else
    DO_PREDICT="True"
