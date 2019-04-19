@@ -1015,12 +1015,48 @@ def main(_):
         result = estimator.predict(input_fn=predict_input_fn)
 
         output_predict_file = os.path.join(FLAGS.output_dir, "test_results.txt")
-        # needs to confirm
-        with tf.gfile.GFile(output_predict_file,'w') as writer:
-            for prediction in result:
-                predict = prediction["predictions"]
-                output_line = "\n".join(id2label[id] for id in predict if id!=0) + "\n"
-                writer.write(output_line)
+
+        def result_to_pair(writer):
+            for predict_line, prediction in zip(predict_examples, result):
+                idx = 0
+                line = ''
+                line_token = str(predict_line.text).split(' ')
+                label_token = str(predict_line.label).split(' ')
+                if len(line_token) != len(label_token):
+                    tf.logging.info(predict_line.text)
+                    tf.logging.info(predict_line.label)
+                for id in prediction:
+                    if id == 0:
+                        continue
+                    curr_labels = id2label[id]
+                    if curr_labels in ['[CLS]', '[SEP]']:
+                        continue
+                    # 不知道为什么，这里会出现idx out of range 的错误。。。do not know why here cache list out of range exception!
+                    try:
+                        line += line_token[idx] + ' ' + label_token[idx] + ' ' + curr_labels + '\n'
+                    except Exception as e:
+                        tf.logging.info(e)
+                        tf.logging.info(predict_line.text)
+                        tf.logging.info(predict_line.label)
+                        line = ''
+                        break
+                    idx += 1
+                writer.write(line + '\n')
+
+        with tf.gfile.GFile(output_predict_file, 'w') as writer:
+            result_to_pair(writer)
+        from conlleval_tpu import return_report
+        with tf.gfile.GFile(output_predict_file, 'r') as reader:
+            eval_result = return_report(reader)
+            print(eval_result)
+
+
+        # # needs to confirm
+        # with tf.gfile.GFile(output_predict_file,'w') as writer:
+        #     for prediction in result:
+        #         predict = prediction["predictions"]
+        #         output_line = "\n".join(id2label[id] for id in predict if id!=0) + "\n"
+        #         writer.write(output_line)
 
         # with tf.gfile.GFile(output_predict_file, "w") as writer:
         #     num_written_lines = 0
