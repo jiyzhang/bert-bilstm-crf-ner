@@ -207,27 +207,28 @@ class DataProcessor(object):
             labels = []
             for line in f:
                 contends = line.strip()
-                tokens = contends.split(' ')
-                # tokens = contends.split(input_file_col_sep)
-                if len(tokens) == 2:
-                    words.append(tokens[0])
-                    labels.append(tokens[1])
-                elif len(tokens) == 1:    #<空格> <label>
-                    words.append(' ')
-                    labels.append(tokens[0])
-                else:
-                    if len(contends) == 0:
-                        # l = ' '.join([label for label in labels if len(label) > 0])
-                        # w = ' '.join([word for word in words if len(word) > 0])
-                        l = example_col_sep.join([label for label in labels if len(label) > 0])
-                        w = example_col_sep.join([word for word in words if len(word) > 0])
-                        lines.append([l, w])
-                        words = []
-                        labels = []
-                        continue
-                if contends.startswith("-DOCSTART-"):
+                if len(contends) == 0:
+                    # l = ' '.join([label for label in labels if len(label) > 0])
+                    # w = ' '.join([word for word in words if len(word) > 0])
+                    l = example_col_sep.join([label for label in labels if len(label) > 0])
+                    w = example_col_sep.join([word for word in words if len(word) > 0])
+                    lines.append([l, w])
+                    words = []
+                    labels = []
+                    continue
+                elif contends.startswith("-DOCSTART-"):
                     words.append('')
                     continue
+                else:
+                    # tokens = contends.split(' ')
+                    tokens = contends.split(input_file_col_sep)
+                    if len(tokens) == 2:
+                        words.append(tokens[0])
+                        labels.append(tokens[1])
+                    elif len(tokens) == 1:    #<空格> <label>
+                        words.append(' ')
+                        labels.append(tokens[0])
+
             return lines
 
 class NerProcessor(DataProcessor):
