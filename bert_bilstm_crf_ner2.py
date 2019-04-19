@@ -483,9 +483,9 @@ def file_based_input_fn_builder(input_file, seq_length, is_training, is_eval, dr
             d = d.repeat()
             d = d.shuffle(buffer_size=300)
 
-        if is_eval:
-            # to avlid "end of sequence" error @eval stage
-            d = d.repeat()
+        # if is_eval:
+        #     # to avlid "end of sequence" error @eval stage
+        #     d = d.repeat()
 
         d = d.apply(
             tf.data.experimental.map_and_batch(
