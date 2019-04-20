@@ -7,11 +7,9 @@ BASED ON Google_BERT.
 
 import collections
 import os
-import sys
-import numpy as np
 
-import codecs
 import pickle
+import codecs
 import logging
 
 import tensorflow as tf
@@ -19,7 +17,7 @@ import tf_metrics
 from bert import modeling
 from bert import optimization
 from bert import tokenization
-import conlleval
+from conlleval_tpu import return_report
 
 from lstm_crf_layer import BiLSTM_CRF
 from tensorflow.contrib.layers.python.layers import initializers
@@ -139,9 +137,13 @@ tf.flags.DEFINE_string('datasetformat', 'wind', "dataset format, conll or wind")
 
 tf.logging.set_verbosity(logging.DEBUG)
 
-col_sep  = " <-> "
-sent_sep = "|" + col_sep + "|"
-file_sep = "^^" + col_sep + "^^"
+if FLAGS.datasetformat == 'wind':
+    col_sep  = " <-> "
+    sent_sep = "|" + col_sep + "|"
+    file_sep = "^^" + col_sep + "^^"
+    example_col_sep = '|'
+else:
+    example_col_sep = ' '
 
 
 class InputExample(object):
@@ -206,28 +208,34 @@ class DataProcessor(object):
         tf.logging.info("datasetformat: %s" % (FLAGS.datasetformat))
         tf.logging.info("dataset format: conll")
         """Reads a BIO data."""
-        #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
             lines = []
             words = []
             labels = []
             for line in f:
                 contends = line.strip()
-                tokens = contends.split(' ')
-                if len(tokens) == 2:
-                    words.append(tokens[0])
-                    labels.append(tokens[1])
-                else:
-                    if len(contends) == 0:
-                        l = ' '.join([label for label in labels if len(label) > 0])
-                        w = ' '.join([word for word in words if len(word) > 0])
-                        lines.append([l, w])
-                        words = []
-                        labels = []
-                        continue
-                if contends.startswith("-DOCSTART-"):
+                if len(contends) == 0:
+                    # l = ' '.join([label for label in labels if len(label) > 0])
+                    # w = ' '.join([word for word in words if len(word) > 0])
+                    l = example_col_sep.join([label for label in labels if len(label) > 0])
+                    w = example_col_sep.join([word for word in words if len(word) > 0])
+                    lines.append([l, w])
+                    words = []
+                    labels = []
+                    continue
+                elif contends.startswith("-DOCSTART-"):
                     words.append('')
                     continue
+                else:
+                    # tokens = contends.split(' ')
+                    tokens = contends.split(' ')
+                    if len(tokens) == 2:
+                        words.append(tokens[0])
+                        labels.append(tokens[1])
+                    elif len(tokens) == 1:    #<空格> <label>
+                        words.append(' ')
+                        labels.append(tokens[0])
+
             return lines
 
     @classmethod
@@ -235,7 +243,6 @@ class DataProcessor(object):
         tf.logging.info("datasetformat: %s" %(FLAGS.datasetformat))
         tf.logging.info("dataset format: wind")
         """Reads a BIO data."""
-        #with codecs.open(input_file, 'r', encoding='utf-8') as f:
         with tf.gfile.Open(input_file) as f:
             lines = []
             words = []
@@ -244,8 +251,10 @@ class DataProcessor(object):
                 contends = line.strip()
                 if contends == file_sep or contends == sent_sep:
                     # new sentence
-                    l = '|'.join([label for label in labels if len(label) > 0])
-                    w = '|'.join([word for word in words if len(word) > 0])
+                    # l = '|'.join([label for label in labels if len(label) > 0])
+                    # w = '|'.join([word for word in words if len(word) > 0])
+                    l = example_col_sep.join([label for label in labels if len(label) > 0])
+                    w = example_col_sep.join([word for word in words if len(word) > 0])
                     lines.append([l, w])
                     words = []
                     labels = []
@@ -255,6 +264,9 @@ class DataProcessor(object):
                     if len(tokens) == 2:
                         words.append(tokens[0])
                         labels.append(tokens[1])
+                    elif len(tokens) == 1:  ## <space> <-> O
+                        words.append(" ")
+                        labels.append(tokens[0])
 
             return lines
 
@@ -386,13 +398,13 @@ def convert_single_example(ex_index, example, label_map, max_seq_length, tokeniz
             label_ids=[0] * max_seq_length, #label_ids=0,
             is_real_example=False)
 
-    if FLAGS.datasetformat == "wind":
-        seperator = '|'
-    else:
-        seperator = ' '
+    # if FLAGS.datasetformat == "wind":
+    #     seperator = '|'
+    # else:
+    #     seperator = ' '
 
-    textlist = example.text.split(seperator)
-    labellist = example.label.split(seperator)
+    textlist = example.text.split(example_col_sep)
+    labellist = example.label.split(example_col_sep)
     tokens = []
     labels = []
     for i, word in enumerate(textlist):
@@ -1020,8 +1032,8 @@ def main(_):
             for predict_line, prediction in zip(predict_examples, result):
                 idx = 0
                 line = ''
-                line_token = str(predict_line.text).split(' ')
-                label_token = str(predict_line.label).split(' ')
+                line_token = str(predict_line.text).split(example_col_sep)
+                label_token = str(predict_line.label).split(example_col_sep)
                 if len(line_token) != len(label_token):
                     tf.logging.info(predict_line.text)
                     tf.logging.info(predict_line.label)
@@ -1045,7 +1057,7 @@ def main(_):
 
         with tf.gfile.GFile(output_predict_file, 'w') as writer:
             result_to_pair(writer)
-        from conlleval_tpu import return_report
+
         with tf.gfile.GFile(output_predict_file, 'r') as reader:
             eval_result = return_report(reader)
             print(eval_result)
