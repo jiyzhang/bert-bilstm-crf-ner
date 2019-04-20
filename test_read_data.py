@@ -2,6 +2,15 @@
 测试数据读入功能 __read_data_conll or __read_data_wind
 
 python3 ./test_read_data.py --data_dir=$BERT_DATA_DIR  --datasetformat=wind
+
+1.
+export BERT_DATA_DIR=gs://bucket220209/data
+python3 test_read_data.py --data_dir=$BERT_DATA_DIR/ --datasetformat=conll
+
+2. wind
+export BERT_DATA_DIR=gs://zjythesis/data/wind
+python3 test_read_data.py --data_dir=$BERT_DATA_DIR/ --datasetformat=wind
+
 """
 
 import collections
