@@ -21,6 +21,9 @@ p = NerProcessor()
 train_example = p.get_train_examples(FLAGS.data_dir)
 limit = 5
 i = 0
+
+print("total number of examples: {}".format(len(train_example)))
+
 for line in train_example:
     if i < limit:
         print(line.guid)

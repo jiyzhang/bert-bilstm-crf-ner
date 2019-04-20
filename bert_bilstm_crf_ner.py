@@ -137,13 +137,18 @@ tf.flags.DEFINE_string('datasetformat', 'wind', "dataset format, conll or wind")
 
 tf.logging.set_verbosity(logging.DEBUG)
 
+example_col_sep = '|'
+
 if FLAGS.datasetformat == 'wind':
-    col_sep  = " <-> "
-    sent_sep = "|" + col_sep + "|"
-    file_sep = "^^" + col_sep + "^^"
-    example_col_sep = '|'
+    # Wind输入文件的字和标签分隔符
+    input_col_sep  = " <-> "
+    # Wind输入文件的句子分隔符
+    input_sent_sep = "|" + input_col_sep + "|"
+    # Wind输入文件中的文件分隔符 （Wind输入文件是多个新闻公告文件的拼接）
+    input_file_sep = "^^" + input_col_sep + "^^"
 else:
-    example_col_sep = ' '
+    # CoNLL数据中，字和标签的分隔符
+    input_col_sep = ' '
 
 
 class InputExample(object):
@@ -228,7 +233,7 @@ class DataProcessor(object):
                     continue
                 else:
                     # tokens = contends.split(' ')
-                    tokens = contends.split(' ')
+                    tokens = contends.split(input_col_sep)
                     if len(tokens) == 2:
                         words.append(tokens[0])
                         labels.append(tokens[1])
@@ -249,7 +254,7 @@ class DataProcessor(object):
             labels = []
             for line in f:
                 contends = line.strip()
-                if contends == file_sep or contends == sent_sep:
+                if contends == input_file_sep or contends == input_sent_sep:
                     # new sentence
                     # l = '|'.join([label for label in labels if len(label) > 0])
                     # w = '|'.join([word for word in words if len(word) > 0])
@@ -260,7 +265,7 @@ class DataProcessor(object):
                     labels = []
                     continue
                 else:
-                    tokens = contends.split(col_sep)
+                    tokens = contends.split(input_col_sep)
                     if len(tokens) == 2:
                         words.append(tokens[0])
                         labels.append(tokens[1])
